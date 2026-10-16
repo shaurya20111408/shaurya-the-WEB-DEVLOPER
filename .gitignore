@@ -1,27 +1,4 @@
-# Python
-__pycache__/
-*.py[cod]
-*.egg-info/
-.venv/
 venv/
-env/
+__pycache__/
 .env
-.env.*
-
-# Databases
 *.db
-*.sqlite
-*.sqlite3
-
-# Logs
-*.log
-logs/
-
-# OS / editor
-.DS_Store
-Thumbs.db
-.idea/
-.vscode/
-
-# Docker / misc
-searxng/
