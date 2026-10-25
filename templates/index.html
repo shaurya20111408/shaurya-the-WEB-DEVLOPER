@@ -1,0 +1,75 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Private Search</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 700px;
+            margin: 60px auto;
+            padding: 0 20px;
+            background: #fff;
+            color: #222;
+        }
+        h1 { font-size: 28px; margin-bottom: 20px; }
+        form { display: flex; gap: 8px; margin-bottom: 30px; }
+        input[type="text"] {
+            flex: 1;
+            padding: 10px 14px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            background: #222;
+            color: #fff;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .result { margin-bottom: 22px; }
+        .result a {
+            font-size: 18px;
+            color: #1a0dab;
+            text-decoration: none;
+        }
+        .result a:hover { text-decoration: underline; }
+        .result .url { color: #006621; font-size: 13px; }
+        .result .snippet { color: #444; font-size: 14px; margin-top: 4px; }
+        .no-results { color: #777; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Private Search</h1>
+    <form action="/" method="get">
+        <input type="text" name="q" placeholder="Search..." value="{{ query or '' }}" autofocus>
+        <button type="submit">Search</button>
+    </form>
+
+    {% if query %}
+        <p>{{ count }} results for "{{ query }}"</p>
+
+        {% if ai_answer %}
+        <div style="background:#f3f3f3; border-left:4px solid #222; padding:14px 18px; margin:16px 0; border-radius:4px;">
+            <strong>AI jawab:</strong>
+            <p style="margin:8px 0 0;">{{ ai_answer }}</p>
+        </div>
+        {% endif %}
+
+        {% if results %}
+            {% for r in results %}
+            <div class="result">
+                <a href="{{ r.url }}" target="_blank">{{ r.title }}</a>
+                <div class="url">{{ r.url }}</div>
+                <div class="snippet">{{ r.snippet | safe }}</div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p class="no-results">Koi result nahi mila.</p>
+        {% endif %}
+    {% endif %}
+</body>
+</html>
