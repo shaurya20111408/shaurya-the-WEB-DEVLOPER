@@ -55,6 +55,51 @@ SEED_URLS = [
     "https://www.freecodecamp.org/news/what-is-rest-api/",
     "https://www.freecodecamp.org/news/data-structures-for-beginners/",
     "https://www.freecodecamp.org/news/algorithmic-complexity-explained/",
+
+        # Databases aur backend
+    "https://www.digitalocean.com/community/tutorials/sqlite-vs-mysql-vs-postgresql-a-comparison-of-relational-database-management-systems",
+    "https://www.freecodecamp.org/news/the-sql-handbook/",
+    "https://www.mongodb.com/resources/products/fundamentals/crud",
+
+    # DevOps / Cloud basics
+    "https://www.freecodecamp.org/news/what-is-ci-cd/",
+    "https://www.digitalocean.com/community/tutorials/an-introduction-to-ci-cd-best-practices",
+    "https://www.freecodecamp.org/news/the-docker-handbook/",
+
+    # Data structures & algorithms
+    "https://www.freecodecamp.org/news/big-o-notation-why-it-matters-and-why-it-doesnt-1674cfa8a23c/",
+    "https://www.freecodecamp.org/news/binary-search-algorithm/",
+    "https://www.freecodecamp.org/news/how-sorting-algorithms-work/",
+    "https://www.freecodecamp.org/news/linked-lists-explained/",
+
+    # React / frontend frameworks
+    "https://react.dev/learn",
+    "https://react.dev/learn/thinking-in-react",
+    "https://www.freecodecamp.org/news/react-hooks-fetch-data/",
+
+    # Node.js
+    "https://nodejs.org/en/learn/getting-started/introduction-to-nodejs",
+    "https://www.freecodecamp.org/news/what-is-nodejs/",
+
+    # Testing / software practices
+    "https://www.freecodecamp.org/news/an-introduction-to-testing-in-python/",
+    "https://realpython.com/python-testing/",
+
+    # Machine Learning basics
+    "https://www.freecodecamp.org/news/machine-learning-for-beginners/",
+    "https://realpython.com/python-ai-neural-network/",
+
+    # Linux / terminal
+    "https://www.freecodecamp.org/news/the-linux-commands-handbook/",
+    "https://www.digitalocean.com/community/tutorials/linux-permissions-basics-and-how-to-use-umask-on-a-vps",
+
+    # Networking basics
+    "https://www.freecodecamp.org/news/how-dns-works-explained-for-beginners/",
+    "https://www.freecodecamp.org/news/what-is-an-http-request/",
+
+    # Security basics
+    "https://www.freecodecamp.org/news/web-security-fundamentals/",
+    "https://owasp.org/www-project-top-ten/",
 ]
 
 HEADERS = {
