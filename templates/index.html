@@ -1,75 +1,321 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Private Search</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 700px;
-            margin: 60px auto;
-            padding: 0 20px;
-            background: #fff;
-            color: #222;
+        :root {
+            --bg-1: #0B1020;
+            --bg-2: #1B1F3B;
+            --glass: rgba(255, 255, 255, 0.06);
+            --glass-border: rgba(255, 255, 255, 0.14);
+            --accent: #5EEAD4;
+            --text: #E8EBF5;
+            --text-dim: #9AA2C0;
         }
-        h1 { font-size: 28px; margin-bottom: 20px; }
-        form { display: flex; gap: 8px; margin-bottom: 30px; }
+
+        * { box-sizing: border-box; }
+
+        html, body {
+            margin: 0;
+            min-height: 100%;
+            font-family: -apple-system, "Segoe UI", Inter, sans-serif;
+            color: var(--text);
+            background: radial-gradient(circle at 20% 10%, #2A2F6A 0%, transparent 45%),
+                        radial-gradient(circle at 85% 80%, #1C4E4A 0%, transparent 40%),
+                        linear-gradient(160deg, var(--bg-1), var(--bg-2));
+            background-attachment: fixed;
+            overflow-x: hidden;
+        }
+
+        #particles {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        #cursor-glow {
+            position: fixed;
+            width: 300px; height: 300px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(94,234,212,0.12) 0%, transparent 70%);
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            z-index: 1;
+            transition: opacity 0.3s ease;
+            opacity: 0;
+        }
+
+        .content {
+            position: relative;
+            z-index: 2;
+            padding: 40px 20px 80px;
+        }
+
+        .wrap { max-width: 720px; margin: 0 auto; }
+
+        .nav {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 18px;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(16px);
+            border-radius: 14px;
+            margin-bottom: 36px;
+            font-weight: 600;
+            font-size: 15px;
+            width: fit-content;
+        }
+        .nav .dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 8px var(--accent);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .hero { text-align: center; margin-bottom: 26px; }
+        .hero h1 {
+            font-size: 34px;
+            font-weight: 700;
+            margin: 0 0 8px;
+            letter-spacing: -0.02em;
+        }
+        .hero p { color: var(--text-dim); margin: 0; font-size: 15px; }
+
+        .search-card {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(18px);
+            border-radius: 18px;
+            padding: 10px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+            margin-bottom: 22px;
+            transition: border-color 0.2s ease;
+        }
+        .search-card:focus-within { border-color: var(--accent); }
+        form { display: flex; gap: 8px; }
         input[type="text"] {
             flex: 1;
-            padding: 10px 14px;
+            padding: 14px 16px;
             font-size: 16px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid transparent;
+            border-radius: 12px;
+            color: var(--text);
+            outline: none;
         }
+        input[type="text"]::placeholder { color: var(--text-dim); }
         button {
-            padding: 10px 20px;
-            font-size: 16px;
+            padding: 0 22px;
+            font-size: 15px;
+            font-weight: 600;
             border: none;
-            background: #222;
-            color: #fff;
-            border-radius: 6px;
+            border-radius: 12px;
+            background: var(--accent);
+            color: #06231F;
             cursor: pointer;
+            transition: filter 0.15s ease, transform 0.1s ease;
         }
-        .result { margin-bottom: 22px; }
+        button:hover { filter: brightness(1.08); }
+        button:active { transform: scale(0.97); }
+
+        .chips {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 36px;
+            flex-wrap: wrap;
+        }
+        .chip {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(14px);
+            border-radius: 999px;
+            padding: 7px 14px;
+            font-size: 13px;
+            color: var(--text-dim);
+        }
+        .chip b { color: var(--accent); font-weight: 600; }
+
+        .meta { color: var(--text-dim); font-size: 14px; margin-bottom: 16px; }
+
+        .ai-box {
+            background: var(--glass);
+            border: 1px solid var(--accent);
+            backdrop-filter: blur(18px);
+            border-radius: 16px;
+            padding: 20px 22px;
+            margin-bottom: 24px;
+        }
+        .ai-box .label {
+            display: flex; align-items: center; gap: 8px;
+            font-weight: 600; font-size: 14px; color: var(--accent);
+            margin-bottom: 8px;
+        }
+        .ai-box p { margin: 0; line-height: 1.6; font-size: 15px; color: var(--text); }
+
+        .result {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(14px);
+            border-radius: 14px;
+            padding: 16px 18px;
+            margin-bottom: 14px;
+            transition: border-color 0.15s ease, transform 0.15s ease;
+        }
+        .result:hover { border-color: var(--accent); transform: translateY(-1px); }
         .result a {
-            font-size: 18px;
-            color: #1a0dab;
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--text);
             text-decoration: none;
         }
-        .result a:hover { text-decoration: underline; }
-        .result .url { color: #006621; font-size: 13px; }
-        .result .snippet { color: #444; font-size: 14px; margin-top: 4px; }
-        .no-results { color: #777; }
+        .result a:hover { color: var(--accent); }
+        .result .url { color: var(--accent); font-size: 12px; margin-top: 2px; opacity: 0.8; }
+        .result .snippet { color: var(--text-dim); font-size: 14px; margin-top: 6px; line-height: 1.5; }
+        .result .snippet b { color: var(--text); }
+
+        .no-results { color: var(--text-dim); text-align: center; padding: 30px 0; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .nav .dot { animation: none; }
+        }
     </style>
 </head>
 <body>
-    <h1>🔍 Private Search</h1>
-    <form action="/" method="get">
-        <input type="text" name="q" placeholder="Search..." value="{{ query or '' }}" autofocus>
-        <button type="submit">Search</button>
-    </form>
+    <canvas id="particles"></canvas>
+    <div id="cursor-glow"></div>
 
-    {% if query %}
-        <p>{{ count }} results for "{{ query }}"</p>
+    <div class="content">
+        <div class="wrap">
+            <div class="nav"><span class="dot"></span> Private Search</div>
 
-        {% if ai_answer %}
-        <div style="background:#f3f3f3; border-left:4px solid #222; padding:14px 18px; margin:16px 0; border-radius:4px;">
-            <strong>AI jawab:</strong>
-            <p style="margin:8px 0 0;">{{ ai_answer }}</p>
-        </div>
-        {% endif %}
-
-        {% if results %}
-            {% for r in results %}
-            <div class="result">
-                <a href="{{ r.url }}" target="_blank">{{ r.title }}</a>
-                <div class="url">{{ r.url }}</div>
-                <div class="snippet">{{ r.snippet | safe }}</div>
+            <div class="hero">
+                <h1>Search, privately.</h1>
+                <p>No tracking. No history. Just results — and an AI summary that runs locally.</p>
             </div>
-            {% endfor %}
-        {% else %}
-            <p class="no-results">Koi result nahi mila.</p>
-        {% endif %}
-    {% endif %}
+
+            <div class="search-card">
+                <form action="/" method="get">
+                    <input type="text" name="q" placeholder="Search anything..." value="{{ query or '' }}" autofocus>
+                    <button type="submit">Search</button>
+                </form>
+            </div>
+
+            <div class="chips">
+                <div class="chip"><b>Zero</b> cookies</div>
+                <div class="chip"><b>Zero</b> tracking</div>
+                <div class="chip"><b>Local</b> AI answers</div>
+            </div>
+
+            {% if query %}
+                <p class="meta">{{ count }} results for "{{ query }}"</p>
+
+                {% if ai_answer %}
+                <div class="ai-box">
+                    <div class="label">✦ AI jawab</div>
+                    <p>{{ ai_answer }}</p>
+                </div>
+                {% endif %}
+
+                {% if results %}
+                    {% for r in results %}
+                    <div class="result">
+                        <a href="{{ r.url }}" target="_blank">{{ r.title }}</a>
+                        <div class="url">{{ r.url }}</div>
+                        <div class="snippet">{{ r.snippet | safe }}</div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="no-results">Koi result nahi mila.</p>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        // ---- Cursor glow (only on devices with a real mouse) ----
+        if (window.matchMedia("(pointer: fine)").matches) {
+            const glow = document.getElementById("cursor-glow");
+            document.addEventListener("mousemove", (e) => {
+                glow.style.left = e.clientX + "px";
+                glow.style.top = e.clientY + "px";
+                glow.style.opacity = "1";
+            });
+            document.addEventListener("mouseleave", () => {
+                glow.style.opacity = "0";
+            });
+        }
+
+        // ---- Floating particles background ----
+        const canvas = document.getElementById("particles");
+        const ctx = canvas.getContext("2d");
+        let particles = [];
+        const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener("resize", resize);
+        resize();
+
+        function initParticles() {
+            const count = Math.min(60, Math.floor((canvas.width * canvas.height) / 25000));
+            particles = Array.from({ length: count }, () => ({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                vx: (Math.random() - 0.5) * 0.3,
+                vy: (Math.random() - 0.5) * 0.3,
+                r: Math.random() * 1.8 + 0.6,
+            }));
+        }
+        initParticles();
+        window.addEventListener("resize", initParticles);
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (const p of particles) {
+                p.x += p.vx;
+                p.y += p.vy;
+                if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+                if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fillStyle = "rgba(94, 234, 212, 0.45)";
+                ctx.fill();
+            }
+
+            // connecting lines between nearby particles
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 120) {
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.strokeStyle = `rgba(94, 234, 212, ${0.12 * (1 - dist / 120)})`;
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            if (!reduceMotion) requestAnimationFrame(draw);
+        }
+        draw();
+    </script>
 </body>
 </html>
