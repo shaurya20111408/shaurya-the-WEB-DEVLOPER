@@ -208,6 +208,33 @@
         @media (prefers-reduced-motion: reduce) {
             .nav .dot { animation: none; }
         }
+                @media (max-width: 600px) {
+            body { padding: 24px 14px 60px; }
+
+            .hero h1 { font-size: 26px; }
+            .hero p { font-size: 13px; padding: 0 10px; }
+
+            .nav { font-size: 13px; padding: 8px 14px; margin-bottom: 26px; }
+
+            form { flex-direction: column; }
+            input[type="text"] { font-size: 16px; padding: 12px 14px; }
+            button { padding: 12px 0; width: 100%; }
+
+            .chips { gap: 6px; margin-bottom: 26px; }
+            .chip { font-size: 11px; padding: 6px 11px; }
+
+            .ai-box { padding: 16px 16px; }
+            .ai-box .label { font-size: 13px; }
+            .ai-box p { font-size: 14px; }
+
+            .source-pill { font-size: 11px; padding: 4px 9px; }
+
+            .result { padding: 14px 14px; }
+            .result a { font-size: 15px; }
+            .result .snippet { font-size: 13px; }
+
+            #cursor-glow { display: none; }
+        }
     </style>
 </head>
 <body>
