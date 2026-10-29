@@ -30,11 +30,11 @@ Sakht Rules:
 1. Jawab mein SIRF wahi facts likho jo upar ke sources mein shabd-sha shabd ya seedhe tarike se likhe hain.
 2. Agar koi fact sources mein nahi hai, use mat likho — chahe wo sahi fact ho tumhare hisaab se.
 3. Jawab 2-3 lines se zyada lamba na ho.
-4. Har fact ke baad [Source N] likho jahan se wo liya.
+4. Har fact ke baad sirf chhota number likho jaise [1] ya [2] — URL ya poora "Source" word kabhi mat likho, sirf bracket mein number.
 5. Agar sources mein query ka seedha jawab nahi milta, sirf itna likho: "Sources mein ispe clear jawab nahi mila."
 6. Koi introduction, koi "yahan hai jawab" jaisi line mat likho — seedha jawab se shuru karo.
-
 """
+
 
     try:
         response = requests.post(

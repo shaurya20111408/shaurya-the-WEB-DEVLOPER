@@ -32,15 +32,20 @@ def run_search(q: str):
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request, q: str = ""):
     results = []
+    ai_sources = []
     if q.strip():
         results = run_search(q)
+        if results:
+            ai_answer = generate_ai_answer(q, results)
+            ai_sources = results[:5]
 
-    context = {
+        context = {
         "request": request,
         "query": q,
         "count": len(results),
         "results": results,
-        "ai_answer": generate_ai_answer(q, results)
+        "ai_answer": ai_answer,
+        "ai_sources": ai_sources,
     }
     return templates.TemplateResponse(request=request, name="index.html", context=context)
 

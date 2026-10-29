@@ -154,6 +154,26 @@
             border-radius: 16px;
             padding: 20px 22px;
             margin-bottom: 24px;
+
+                    .ai-sources {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 14px;
+            padding-top: 14px;
+            border-top: 1px solid var(--glass-border);
+        }
+        .source-pill {
+            font-size: 12px;
+            color: var(--text-dim);
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--glass-border);
+            border-radius: 999px;
+            padding: 5px 10px;
+            text-decoration: none;
+            transition: color 0.15s ease, border-color 0.15s ease;
+        }
+        .source-pill:hover { color: var(--accent); border-color: var(--accent); }
         }
         .ai-box .label {
             display: flex; align-items: center; gap: 8px;
@@ -221,10 +241,17 @@
 
                 {% if ai_answer %}
                 <div class="ai-box">
-                    <div class="label">✦ AI jawab</div>
-                    <p>{{ ai_answer }}</p>
-                </div>
-                {% endif %}
+                <div class="label">✦ AI jawab</div>
+                <p>{{ ai_answer }}</p>
+                     {% if ai_sources %}
+              <div class="ai-sources">
+        {% for s in ai_sources %}
+        <a href="{{ s.url }}" target="_blank" class="source-pill">[{{ loop.index }}] {{ s.title[:28] }}{% if s.title|length > 28 %}...{% endif %}</a>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endif %}
 
                 {% if results %}
                     {% for r in results %}
