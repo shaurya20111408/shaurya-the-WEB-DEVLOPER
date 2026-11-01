@@ -11,8 +11,8 @@ SEED_URLS = [
     "https://realpython.com/python-first-steps/",
     "https://realpython.com/python-virtual-environments-a-primer/",
     "https://realpython.com/python-data-structures/",
-    "https://www.freecodecamp.org/news/python-for-loops-explained/",
-    "https://www.freecodecamp.org/news/python-list-comprehension/",
+    "https://www.freecodecamp.org/news/python-for-loop-example-and-tutorial/",
+    "https://www.freecodecamp.org/news/list-comprehension-in-python/",
     "https://www.w3schools.com/python/python_functions.asp",
     "https://www.w3schools.com/python/python_dictionaries.asp",
 
@@ -20,7 +20,7 @@ SEED_URLS = [
     "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide",
     "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Functions",
     "https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Asynchronous",
-    "https://www.freecodecamp.org/news/javascript-array-methods/",
+    "https://www.freecodecamp.org/news/complete-introduction-to-the-most-useful-javascript-array-methods/",
     "https://www.freecodecamp.org/news/javascript-promises-explained/",
     "https://www.w3schools.com/js/js_arrow_function.asp",
     "https://www.w3schools.com/js/js_async.asp",
@@ -28,18 +28,14 @@ SEED_URLS = [
     # Web dev / HTML / CSS
     "https://developer.mozilla.org/en-US/docs/Web/HTML",
     "https://developer.mozilla.org/en-US/docs/Web/CSS",
-    "https://www.freecodecamp.org/news/css-flexbox-explained/",
-    "https://www.freecodecamp.org/news/css-grid-layout-guide/",
 
     # Git / GitHub
     "https://docs.github.com/en/get-started/quickstart/hello-world",
     "https://docs.github.com/en/get-started/using-git/about-git",
-    "https://www.freecodecamp.org/news/git-basics/",
 
     # Linux basics
     "https://www.digitalocean.com/community/tutorials/how-to-install-python-3-and-set-up-a-programming-environment",
     "https://www.digitalocean.com/community/tutorials/linux-commands",
-    "https://www.digitalocean.com/community/tutorial-collections/how-to-use-linux",
 
     # FastAPI / web backend
     "https://fastapi.tiangolo.com/tutorial/first-steps/",
@@ -52,13 +48,9 @@ SEED_URLS = [
 
     # General programming concepts
     "https://www.freecodecamp.org/news/what-is-an-api-in-english-please-b880a3214a82/",
-    "https://www.freecodecamp.org/news/what-is-rest-api/",
-    "https://www.freecodecamp.org/news/data-structures-for-beginners/",
-    "https://www.freecodecamp.org/news/algorithmic-complexity-explained/",
 
-        # Databases aur backend
+    # Databases aur backend
     "https://www.digitalocean.com/community/tutorials/sqlite-vs-mysql-vs-postgresql-a-comparison-of-relational-database-management-systems",
-    "https://www.freecodecamp.org/news/the-sql-handbook/",
     "https://www.mongodb.com/resources/products/fundamentals/crud",
 
     # DevOps / Cloud basics
@@ -68,37 +60,26 @@ SEED_URLS = [
 
     # Data structures & algorithms
     "https://www.freecodecamp.org/news/big-o-notation-why-it-matters-and-why-it-doesnt-1674cfa8a23c/",
-    "https://www.freecodecamp.org/news/binary-search-algorithm/",
-    "https://www.freecodecamp.org/news/how-sorting-algorithms-work/",
-    "https://www.freecodecamp.org/news/linked-lists-explained/",
 
     # React / frontend frameworks
     "https://react.dev/learn",
     "https://react.dev/learn/thinking-in-react",
-    "https://www.freecodecamp.org/news/react-hooks-fetch-data/",
 
     # Node.js
     "https://nodejs.org/en/learn/getting-started/introduction-to-nodejs",
-    "https://www.freecodecamp.org/news/what-is-nodejs/",
 
     # Testing / software practices
     "https://www.freecodecamp.org/news/an-introduction-to-testing-in-python/",
     "https://realpython.com/python-testing/",
 
     # Machine Learning basics
-    "https://www.freecodecamp.org/news/machine-learning-for-beginners/",
     "https://realpython.com/python-ai-neural-network/",
 
     # Linux / terminal
     "https://www.freecodecamp.org/news/the-linux-commands-handbook/",
     "https://www.digitalocean.com/community/tutorials/linux-permissions-basics-and-how-to-use-umask-on-a-vps",
 
-    # Networking basics
-    "https://www.freecodecamp.org/news/how-dns-works-explained-for-beginners/",
-    "https://www.freecodecamp.org/news/what-is-an-http-request/",
-
     # Security basics
-    "https://www.freecodecamp.org/news/web-security-fundamentals/",
     "https://owasp.org/www-project-top-ten/",
 ]
 
@@ -164,23 +145,40 @@ def crawl():
     setup_database()
     print(f"Crawling {len(SEED_URLS)} URLs...\n")
 
+    saved = []
+    failed = []
+
     for url in SEED_URLS:
         print(f"Fetching: {url}")
         html = fetch_page(url)
         if not html:
+            failed.append((url, "fetch failed"))
             continue
 
         page_data = extract_content(html, url)
-        if not page_data or len(page_data["content"]) < 100:
-            print("  -> Skipped (content too short or empty)")
+        if not page_data:
+            print("  -> Skipped (trafilatura could not extract anything)")
+            failed.append((url, "extraction failed"))
+            continue
+
+        content_len = len(page_data["content"])
+        if content_len < 100:
+            print(f"  -> Skipped (content too short: {content_len} chars)")
+            failed.append((url, f"content too short ({content_len} chars)"))
             continue
 
         save_page(url, page_data["title"], page_data["content"])
         print(f"  -> Saved: {page_data['title'][:60]}")
+        saved.append(url)
 
         time.sleep(1.5)
 
-    print("\nCrawling complete!")
+    print(f"\nCrawling complete! Saved: {len(saved)} / Failed: {len(failed)}\n")
+
+    if failed:
+        print("Failed URLs and reasons:")
+        for url, reason in failed:
+            print(f"  - {url}\n    Reason: {reason}")
 
 
 if __name__ == "__main__":
