@@ -81,6 +81,47 @@ SEED_URLS = [
 
     # Security basics
     "https://owasp.org/www-project-top-ten/",
+
+        # TypeScript
+    "https://www.typescriptlang.org/docs/handbook/intro.html",
+    "https://www.typescriptlang.org/docs/handbook/2/basic-types.html",
+
+    # Vue.js
+    "https://vuejs.org/guide/introduction.html",
+    "https://vuejs.org/guide/essentials/reactivity-fundamentals.html",
+
+    # Django / Flask (Python web frameworks)
+    "https://docs.djangoproject.com/en/5.1/intro/overview/",
+    "https://flask.palletsprojects.com/en/stable/quickstart/",
+
+    # Go
+    "https://go.dev/doc/tutorial/getting-started",
+
+    # Rust
+    "https://doc.rust-lang.org/book/ch01-00-getting-started.html",
+
+    # Docker / Kubernetes basics
+    "https://docs.docker.com/get-started/docker-overview/",
+    "https://kubernetes.io/docs/concepts/overview/",
+
+    # GraphQL
+    "https://graphql.org/learn/",
+
+    # Redis
+    "https://redis.io/docs/latest/develop/get-started/",
+
+    # Data science: Pandas / NumPy
+    "https://pandas.pydata.org/docs/getting_started/overview.html",
+    "https://numpy.org/doc/stable/user/absolute_beginners.html",
+
+    # Regex
+    "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions",
+
+    # Testing frameworks
+    "https://docs.pytest.org/en/stable/getting-started.html",
+
+    # API design
+    "https://restfulapi.net/",
 ]
 
 HEADERS = {
