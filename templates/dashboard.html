@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Dashboard — Private Search</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔍</text></svg>">
+    <style>
+        :root {
+            --bg-1: #0B1020;
+            --bg-2: #1B1F3B;
+            --glass: rgba(255, 255, 255, 0.06);
+            --glass-strong: rgba(255, 255, 255, 0.09);
+            --glass-border: rgba(255, 255, 255, 0.14);
+            --accent: #5EEAD4;
+            --accent-2: #A78BFA;
+            --accent-3: #F472B6;
+            --text: #E8EBF5;
+            --text-dim: #9AA2C0;
+            --red: #F87171;
+            --green: #4ADE80;
+        }
+        * { box-sizing: border-box; }
+        html, body {
+            margin: 0; min-height: 100%;
+            font-family: -apple-system, "Segoe UI", Inter, sans-serif;
+            color: var(--text);
+            background: radial-gradient(circle at 15% 15%, #3A1F6E 0%, transparent 42%),
+                        radial-gradient(circle at 85% 20%, #164E4A 0%, transparent 40%),
+                        radial-gradient(circle at 60% 90%, #5B1E52 0%, transparent 38%),
+                        linear-gradient(160deg, var(--bg-1), var(--bg-2));
+            background-attachment: fixed;
+            overflow-x: hidden;
+        }
+        #particles { position: fixed; top:0; left:0; width:100%; height:100%; z-index:0; pointer-events:none; }
+        a { text-decoration: none; }
+
+        .layout { position: relative; z-index: 2; display: flex; min-height: 100vh; }
+
+        /* Sidebar */
+        .sidebar {
+            width: 220px; flex-shrink: 0; padding: 22px 14px;
+            background: var(--glass); border-right: 1px solid var(--glass-border);
+            backdrop-filter: blur(20px); position: sticky; top: 0; height: 100vh;
+        }
+        .sidebar .logo { font-size: 16px; font-weight: 700; margin-bottom: 26px; padding: 0 8px; display: flex; align-items: center; gap: 8px; }
+        .nav-item {
+            display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px;
+            color: var(--text-dim); font-size: 14px; font-weight: 500; margin-bottom: 3px; cursor: pointer;
+            transition: background 0.15s ease, color 0.15s ease;
+        }
+        .nav-item:hover { background: rgba(94,234,212,0.08); color: var(--accent); }
+        .nav-item.active { background: rgba(94,234,212,0.12); color: var(--accent); font-weight: 600; }
+        .nav-item .tag { margin-left: auto; font-size: 9.5px; background: rgba(255,255,255,0.08); color: var(--text-dim); padding: 2px 6px; border-radius: 999px; }
+
+        /* Main */
+        .main { flex: 1; min-width: 0; }
+        .topnav {
+            display: flex; align-items: center; justify-content: space-between; gap: 16px;
+            padding: 14px 24px; background: var(--glass); border-bottom: 1px solid var(--glass-border);
+            backdrop-filter: blur(20px); position: sticky; top: 0; z-index: 5;
+        }
+        .topnav .search-box {
+            flex: 1; max-width: 360px; display: flex; align-items: center; gap: 8px;
+            background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border); border-radius: 10px; padding: 8px 12px;
+        }
+        .topnav .search-box input { border: none; background: none; outline: none; font-size: 13px; width: 100%; color: var(--text); }
+        .topnav .search-box input::placeholder { color: var(--text-dim); }
+        .topnav .icons { display: flex; align-items: center; gap: 12px; }
+        .icon-btn {
+            width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+            border-radius: 10px; color: var(--text-dim); cursor: pointer; font-size: 15px;
+            border: 1px solid transparent;
+        }
+        .icon-btn:hover { background: rgba(255,255,255,0.06); border-color: var(--glass-border); }
+        .avatar {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            color: #06231F; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700;
+        }
+
+        .content-row { display: flex; gap: 20px; padding: 26px; align-items: flex-start; }
+        .main-col { flex: 1; min-width: 0; }
+        .right-col { width: 280px; flex-shrink: 0; }
+        @media (max-width: 950px) { .content-row { flex-direction: column; } .right-col { width: 100%; } .sidebar { display: none; } }
+
+        .welcome h1 { font-size: 23px; margin: 0 0 4px; }
+        .welcome p { color: var(--text-dim); margin: 0 0 22px; font-size: 14px; }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 26px; }
+        .card {
+            background: var(--glass); border: 1px solid var(--glass-border); border-radius: 16px;
+            padding: 18px 20px; backdrop-filter: blur(16px);
+            box-shadow: 0 8px 26px rgba(0,0,0,0.25);
+            transition: transform 0.18s ease, border-color 0.18s ease;
+        }
+        .card:hover { transform: translateY(-3px); border-color: rgba(94,234,212,0.35); }
+        .card .label { font-size: 12px; color: var(--text-dim); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+        .card .value { font-size: 26px; font-weight: 700; }
+        .card .value.ok { color: var(--accent); }
+        .card .value.bad { color: var(--red); }
+        .status-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:7px; }
+        .status-dot.ok { background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: pulse 2s ease-in-out infinite; }
+        .status-dot.bad { background: var(--red); box-shadow: 0 0 8px var(--red); }
+        @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+
+        .panel {
+            background: var(--glass); border: 1px solid var(--glass-border); border-radius: 16px;
+            padding: 22px; margin-bottom: 18px; backdrop-filter: blur(16px);
+            box-shadow: 0 8px 26px rgba(0,0,0,0.25);
+        }
+        .panel h3 { font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin: 0 0 18px; }
+
+        .two-col { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; align-items: center; }
+        @media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
+
+        .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
+        .bar-label { width: 130px; font-size: 13px; color: var(--text-dim); flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .bar-track { flex: 1; background: rgba(255,255,255,0.05); border-radius: 999px; height: 9px; overflow: hidden; }
+        .bar-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); width: 0%; transition: width 1s cubic-bezier(.22,1,.36,1); }
+        .bar-count { width: 26px; text-align: right; font-size: 12.5px; font-weight: 600; color: var(--text); }
+
+        .insight-box {
+            background: rgba(94,234,212,0.08); border: 1px solid rgba(94,234,212,0.3);
+            border-radius: 12px; padding: 16px 18px; font-size: 13.5px; color: var(--text); line-height: 1.55;
+        }
+        .insight-box b { color: var(--accent); }
+
+        .quick-btn {
+            display: flex; align-items: center; gap: 8px; width: 100%; padding: 11px 13px;
+            background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border); border-radius: 10px;
+            font-size: 13px; color: var(--text); margin-bottom: 8px; cursor: pointer; font-weight: 500;
+            transition: border-color 0.15s ease, color 0.15s ease;
+        }
+        .quick-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+        .locked-note { font-size: 12.5px; color: var(--text-dim); line-height: 1.55; }
+        .locked-note b { color: var(--text); }
+
+        @media (max-width: 600px) {
+            .content-row { padding: 16px; }
+            .welcome h1 { font-size: 19px; }
+            .card .value { font-size: 21px; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="particles"></canvas>
+
+    <div class="layout">
+        <div class="sidebar">
+            <div class="logo"><span style="color:var(--accent);">●</span> Private Search</div>
+            <div class="nav-item active">📊 Dashboard</div>
+            <div class="nav-item">📈 Analytics</div>
+            <div class="nav-item">✦ AI Assistant</div>
+            <div class="nav-item">📁 Projects <span class="tag">soon</span></div>
+            <div class="nav-item">🕐 History <span class="tag">off</span></div>
+            <div class="nav-item">⚙ Settings</div>
+        </div>
+
+        <div class="main">
+            <div class="topnav">
+                <form class="search-box" action="/" method="get">
+                    <span>🔍</span>
+                    <input type="text" name="q" placeholder="Search anything...">
+                </form>
+                <div class="icons">
+                    <div class="icon-btn" title="Notifications — disabled (no tracking)">🔔</div>
+                    <div class="icon-btn" title="Theme switcher (coming soon)">🌓</div>
+                    <div class="avatar">?</div>
+                </div>
+            </div>
+
+            <div class="content-row">
+                <div class="main-col">
+                    <div class="welcome">
+                        <h1>Welcome back 👋</h1>
+                        <p>Here's what your private index looks like right now.</p>
+                    </div>
+
+                    <div class="grid">
+                        <div class="card">
+                            <div class="label">Total pages indexed</div>
+                            <div class="value">{{ stats.total_pages }}</div>
+                        </div>
+                        <div class="card">
+                            <div class="label">Sources crawled</div>
+                            <div class="value">{{ stats.total_sources }}</div>
+                        </div>
+                        <div class="card">
+                            <div class="label">Search index</div>
+                            <div class="value {{ 'ok' if health.db_ok else 'bad' }}"><span class="status-dot {{ 'ok' if health.db_ok else 'bad' }}"></span>{{ "Online" if health.db_ok else "Offline" }}</div>
+                        </div>
+                        <div class="card">
+                            <div class="label">Local AI (Ollama)</div>
+                            <div class="value {{ 'ok' if health.ollama_ok else 'bad' }}"><span class="status-dot {{ 'ok' if health.ollama_ok else 'bad' }}"></span>{{ "Online" if health.ollama_ok else "Offline" }}</div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <h3>Analytics — pages per source</h3>
+                        <div class="two-col">
+                            <div>
+                                {% for d in stats.chart_data %}
+                                <div class="bar-row">
+                                    <div class="bar-label">{{ d.domain }}</div>
+                                    <div class="bar-track"><div class="bar-fill" data-pct="{{ d.pct }}"></div></div>
+                                    <div class="bar-count">{{ d.count }}</div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <svg id="donut" width="160" height="160" viewBox="0 0 160 160"></svg>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <h3>✦ AI insight</h3>
+                        <div class="insight-box">
+                            {% if stats.chart_data %}
+                            Your index leans heavily on <b>{{ stats.chart_data[0].domain }}</b> ({{ stats.chart_data[0].count }} pages). Consider adding more sources for broader topic coverage.
+                            {% else %}
+                            No data yet — run the crawler to populate your index.
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="right-col">
+                    <div class="panel">
+                        <h3>Quick actions</h3>
+                        <a href="/dashboard/export.csv" class="quick-btn">⬇ Export index as CSV</a>
+                        <div class="quick-btn" title="Run: python crawler\\crawl.py">↻ Re-crawl index</div>
+                        <a href="/" class="quick-btn">🔍 Go to search</a>
+                    </div>
+                    <div class="panel">
+                        <h3>Recent activity</h3>
+                        <p class="locked-note">
+                            <b>Disabled by design.</b> This engine logs no queries and tracks no history — so there's no activity feed to show.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.querySelectorAll(".bar-fill").forEach((el) => {
+            const pct = el.getAttribute("data-pct");
+            requestAnimationFrame(() => { el.style.width = pct + "%"; });
+        });
+
+        const chartData = {{ stats.chart_data | tojson }};
+        const colors = ["#5EEAD4", "#A78BFA", "#F472B6", "#60A5FA", "#FBBF24", "#4ADE80", "#FB923C", "#F87171"];
+        const svg = document.getElementById("donut");
+        if (chartData.length) {
+            const total = chartData.reduce((sum, d) => sum + d.count, 0);
+            const cx = 80, cy = 80, r = 62, strokeW = 20;
+            const circumference = 2 * Math.PI * r;
+            let offset = 0;
+            chartData.forEach((d, i) => {
+                const frac = d.count / total;
+                const dash = frac * circumference;
+                const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                circle.setAttribute("cx", cx); circle.setAttribute("cy", cy); circle.setAttribute("r", r);
+                circle.setAttribute("fill", "none");
+                circle.setAttribute("stroke", colors[i % colors.length]);
+                circle.setAttribute("stroke-width", strokeW);
+                circle.setAttribute("stroke-dasharray", `${dash} ${circumference - dash}`);
+                circle.setAttribute("stroke-dashoffset", -offset);
+                circle.setAttribute("transform", `rotate(-90 ${cx} ${cy})`);
+                svg.appendChild(circle);
+                offset += dash;
+            });
+            const centerText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            centerText.setAttribute("x", cx); centerText.setAttribute("y", cy + 6);
+            centerText.setAttribute("text-anchor", "middle");
+            centerText.setAttribute("fill", "#E8EBF5");
+            centerText.setAttribute("font-size", "20"); centerText.setAttribute("font-weight", "700");
+            centerText.textContent = total;
+            svg.appendChild(centerText);
+        }
+
+        // Particle background
+        const canvas = document.getElementById("particles");
+        const ctx = canvas.getContext("2d");
+        let particles = [];
+        const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.addEventListener("resize", resize); resize();
+        function initParticles() {
+            const count = Math.min(45, Math.floor((canvas.width * canvas.height) / 30000));
+            particles = Array.from({ length: count }, () => ({
+                x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+                vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3,
+                r: Math.random() * 1.8 + 0.6,
+            }));
+        }
+        initParticles(); window.addEventListener("resize", initParticles);
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (const p of particles) {
+                p.x += p.vx; p.y += p.vy;
+                if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+                if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fillStyle = "rgba(94, 234, 212, 0.4)"; ctx.fill();
+            }
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x, dy = particles[i].y - particles[j].y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < 110) {
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.strokeStyle = `rgba(94, 234, 212, ${0.1 * (1 - dist/110)})`;
+                        ctx.lineWidth = 1; ctx.stroke();
+                    }
+                }
+            }
+            if (!reduceMotion) requestAnimationFrame(draw);
+        }
+        draw();
+    </script>
+</body>
+</html>

@@ -1,3 +1,7 @@
+import csv
+import io
+from fastapi.responses import StreamingResponse
+from app.stats import get_index_stats, check_system_health
 from app.ai_answer import generate_ai_answer
 import sqlite3
 from fastapi import FastAPI, Request
@@ -56,3 +60,30 @@ def search(q: str):
         return {"results": []}
     results = run_search(q)
     return {"query": q, "count": len(results), "results": results}
+@app.get("/dashboard", response_class=HTMLResponse)
+def dashboard(request: Request):
+    stats = get_index_stats()
+    health = check_system_health()
+    return templates.TemplateResponse(
+        request=request, name="dashboard.html",
+        context={"request": request, "stats": stats, "health": health}
+    )
+
+
+@app.get("/dashboard/export.csv")
+def export_csv():
+    conn = sqlite3.connect(DB_PATH)
+    rows = conn.execute("SELECT url, title FROM pages").fetchall()
+    conn.close()
+
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(["URL", "Title"])
+    writer.writerows(rows)
+    buffer.seek(0)
+
+    return StreamingResponse(
+        iter([buffer.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=index_export.csv"},
+    )

@@ -24,3 +24,4 @@ Koi cookie nahi, koi IP store nahi, koi search history nahi, aur AI jawab source
 
 ## Privacy
 Dekho `PRIVACY.md`.
+hello .privacy.m-- helloo

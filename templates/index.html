@@ -247,7 +247,10 @@
 
     <div class="content">
         <div class="wrap">
-            <div class="nav"><span class="dot"></span> Private Search</div>
+          <div class="nav" style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+    <span><span class="dot"></span> Private Search</span>
+    <a href="/dashboard" style="color:var(--text-dim); text-decoration:none; font-size:13px;">📊 Dashboard</a>
+</div>
 
             <div class="hero">
                 <h1>Search, privately.</h1>
@@ -313,7 +316,6 @@
             });
         }
 
-        // ---- Floating particles background ----
         const canvas = document.getElementById("particles");
         const ctx = canvas.getContext("2d");
         let particles = [];
