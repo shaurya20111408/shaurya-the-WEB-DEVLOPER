@@ -1,12 +1,12 @@
 import csv
 import io
-from fastapi.responses import StreamingResponse
-from app.stats import get_index_stats, check_system_health
-from app.ai_answer import generate_ai_answer
 import sqlite3
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
+
+from app.ai_answer import generate_ai_answer
+from app.stats import get_index_stats, check_system_health
 
 app = FastAPI(title="Private Search")
 templates = Jinja2Templates(directory="templates")
@@ -36,14 +36,16 @@ def run_search(q: str):
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request, q: str = ""):
     results = []
+    ai_answer = ""
     ai_sources = []
+
     if q.strip():
         results = run_search(q)
         if results:
             ai_answer = generate_ai_answer(q, results)
             ai_sources = results[:5]
 
-        context = {
+    context = {
         "request": request,
         "query": q,
         "count": len(results),
@@ -60,6 +62,8 @@ def search(q: str):
         return {"results": []}
     results = run_search(q)
     return {"query": q, "count": len(results), "results": results}
+
+
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard(request: Request):
     stats = get_index_stats()
