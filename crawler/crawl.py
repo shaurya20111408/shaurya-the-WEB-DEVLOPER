@@ -122,6 +122,39 @@ SEED_URLS = [
 
     # API design
     "https://restfulapi.net/",
+
+        # Cloud basics
+    "https://docs.aws.amazon.com/whitepapers/latest/aws-overview/introduction.html",
+    "https://learn.microsoft.com/en-us/azure/?product=popular",
+    "https://cloud.google.com/docs/overview",
+
+    # Mobile dev
+    "https://developer.android.com/get-started/overview",
+    "https://developer.apple.com/tutorials/swiftui",
+    "https://docs.flutter.dev/get-started/install",
+
+    # DevOps / CI tools
+    "https://docs.github.com/en/actions/writing-workflows/quickstart",
+    "https://www.jenkins.io/doc/pipeline/tour/hello-world/",
+
+    # Cybersecurity basics
+    "https://owasp.org/www-project-web-security-testing-guide/",
+    "https://developer.mozilla.org/en-US/docs/Web/Security",
+
+    # General CS concepts
+    "https://developer.mozilla.org/en-US/docs/Web/API",
+    "https://developer.mozilla.org/en-US/docs/Learn/Common_questions/Web_mechanics/What_is_a_web_server",
+    "https://www.w3schools.com/whatis/",
+
+    # Package managers / build tools
+    "https://docs.npmjs.com/about-npm",
+    "https://pip.pypa.io/en/stable/getting-started/",
+
+    # Shell / terminal
+    "https://www.gnu.org/software/bash/manual/bash.html",
+
+    # Markdown / documentation
+    "https://www.markdownguide.org/getting-started/",
 ]
 
 HEADERS = {
