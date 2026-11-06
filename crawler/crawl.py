@@ -2,6 +2,8 @@ import sqlite3
 import time
 import requests
 import trafilatura
+from bs4 import BeautifulSoup
+from urllib.parse import urljoin, urlparse
 
 SEED_URLS = [
     # Python
@@ -82,55 +84,13 @@ SEED_URLS = [
     # Security basics
     "https://owasp.org/www-project-top-ten/",
 
-        # TypeScript
-    "https://www.typescriptlang.org/docs/handbook/intro.html",
-    "https://www.typescriptlang.org/docs/handbook/2/basic-types.html",
-
-    # Vue.js
-    "https://vuejs.org/guide/introduction.html",
-    "https://vuejs.org/guide/essentials/reactivity-fundamentals.html",
-
-    # Django / Flask (Python web frameworks)
-    "https://docs.djangoproject.com/en/5.1/intro/overview/",
-    "https://flask.palletsprojects.com/en/stable/quickstart/",
-
-    # Go
-    "https://go.dev/doc/tutorial/getting-started",
-
-    # Rust
-    "https://doc.rust-lang.org/book/ch01-00-getting-started.html",
-
-    # Docker / Kubernetes basics
-    "https://docs.docker.com/get-started/docker-overview/",
-    "https://kubernetes.io/docs/concepts/overview/",
-
-    # GraphQL
-    "https://graphql.org/learn/",
-
-    # Redis
-    "https://redis.io/docs/latest/develop/get-started/",
-
-    # Data science: Pandas / NumPy
-    "https://pandas.pydata.org/docs/getting_started/overview.html",
-    "https://numpy.org/doc/stable/user/absolute_beginners.html",
-
-    # Regex
-    "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions",
-
-    # Testing frameworks
-    "https://docs.pytest.org/en/stable/getting-started.html",
-
-    # API design
-    "https://restfulapi.net/",
-
-        # Cloud basics
+    # Cloud basics
     "https://docs.aws.amazon.com/whitepapers/latest/aws-overview/introduction.html",
     "https://learn.microsoft.com/en-us/azure/?product=popular",
     "https://cloud.google.com/docs/overview",
 
     # Mobile dev
     "https://developer.android.com/get-started/overview",
-    "https://developer.apple.com/tutorials/swiftui",
     "https://docs.flutter.dev/get-started/install",
 
     # DevOps / CI tools
@@ -163,9 +123,12 @@ HEADERS = {
 
 DB_PATH = "search_index.db"
 
+# Auto-expand settings
+MAX_DEPTH = 1          # kitni "layers" andar links follow karein (0 = sirf seed, 1 = seed + unke links)
+MAX_LINKS_PER_PAGE = 3  # har page se zyada se zyada kitne naye links follow karein
+
 
 def setup_database():
-    """Database aur table banata hai agar pehle se nahi hai."""
     conn = sqlite3.connect(DB_PATH)
     conn.execute("""
         CREATE VIRTUAL TABLE IF NOT EXISTS pages USING fts5(
@@ -177,7 +140,6 @@ def setup_database():
 
 
 def fetch_page(url: str):
-    """Ek URL ka raw HTML download karta hai."""
     try:
         response = requests.get(url, headers=HEADERS, timeout=10)
         response.raise_for_status()
@@ -188,7 +150,6 @@ def fetch_page(url: str):
 
 
 def extract_content(html: str, url: str):
-    """HTML se saaf text aur title nikalta hai."""
     extracted = trafilatura.extract(
         html, include_comments=False, include_tables=False,
         output_format="json", url=url
@@ -204,8 +165,36 @@ def extract_content(html: str, url: str):
     }
 
 
+def extract_links(html: str, base_url: str, same_domain_only: bool = True) -> list[str]:
+    """Page ke andar se internal links nikalta hai (auto-expand ke liye)."""
+    soup = BeautifulSoup(html, "html.parser")
+    base_domain = urlparse(base_url).netloc
+
+    links = []
+    for a_tag in soup.find_all("a", href=True):
+        href = a_tag["href"]
+        full_url = urljoin(base_url, href)
+        parsed = urlparse(full_url)
+
+        if parsed.scheme not in ("http", "https"):
+            continue
+        if same_domain_only and parsed.netloc != base_domain:
+            continue
+        # fragments aur query junk clean karo
+        clean_url = parsed._replace(fragment="", query="").geturl()
+        links.append(clean_url)
+
+    return links
+
+
+def url_already_indexed(url: str) -> bool:
+    conn = sqlite3.connect(DB_PATH)
+    row = conn.execute("SELECT 1 FROM pages WHERE url = ? LIMIT 1", (url,)).fetchone()
+    conn.close()
+    return row is not None
+
+
 def save_page(url: str, title: str, content: str):
-    """Page ko database mein save karta hai."""
     conn = sqlite3.connect(DB_PATH)
     conn.execute(
         "INSERT INTO pages (url, title, content) VALUES (?, ?, ?)",
@@ -215,37 +204,62 @@ def save_page(url: str, title: str, content: str):
     conn.close()
 
 
+def crawl_one(url: str, saved: list, failed: list) -> list[str]:
+    """Ek URL crawl karta hai, save karta hai, aur uske andar ke links return karta hai."""
+    print(f"Fetching: {url}")
+    html = fetch_page(url)
+    if not html:
+        failed.append((url, "fetch failed"))
+        return []
+
+    page_data = extract_content(html, url)
+    if not page_data:
+        print("  -> Skipped (trafilatura could not extract anything)")
+        failed.append((url, "extraction failed"))
+        return []
+
+    content_len = len(page_data["content"])
+    if content_len < 100:
+        print(f"  -> Skipped (content too short: {content_len} chars)")
+        failed.append((url, f"content too short ({content_len} chars)"))
+        return []
+
+    save_page(url, page_data["title"], page_data["content"])
+    print(f"  -> Saved: {page_data['title'][:60]}")
+    saved.append(url)
+
+    time.sleep(1.5)
+    return extract_links(html, url)
+
+
 def crawl():
     setup_database()
-    print(f"Crawling {len(SEED_URLS)} URLs...\n")
+    print(f"Crawling {len(SEED_URLS)} seed URLs (auto-expand depth={MAX_DEPTH})...\n")
 
     saved = []
     failed = []
+    visited = set(SEED_URLS)
 
-    for url in SEED_URLS:
-        print(f"Fetching: {url}")
-        html = fetch_page(url)
-        if not html:
-            failed.append((url, "fetch failed"))
-            continue
+    current_layer = list(SEED_URLS)
 
-        page_data = extract_content(html, url)
-        if not page_data:
-            print("  -> Skipped (trafilatura could not extract anything)")
-            failed.append((url, "extraction failed"))
-            continue
+    for depth in range(MAX_DEPTH + 1):
+        next_layer = []
+        print(f"\n--- Depth {depth}: {len(current_layer)} URLs ---\n")
 
-        content_len = len(page_data["content"])
-        if content_len < 100:
-            print(f"  -> Skipped (content too short: {content_len} chars)")
-            failed.append((url, f"content too short ({content_len} chars)"))
-            continue
+        for url in current_layer:
+            if url_already_indexed(url):
+                print(f"Skipping (already indexed): {url}")
+                continue
 
-        save_page(url, page_data["title"], page_data["content"])
-        print(f"  -> Saved: {page_data['title'][:60]}")
-        saved.append(url)
+            links = crawl_one(url, saved, failed)
 
-        time.sleep(1.5)
+            if depth < MAX_DEPTH:
+                new_links = [l for l in links if l not in visited][:MAX_LINKS_PER_PAGE]
+                for l in new_links:
+                    visited.add(l)
+                    next_layer.append(l)
+
+        current_layer = next_layer
 
     print(f"\nCrawling complete! Saved: {len(saved)} / Failed: {len(failed)}\n")
 
