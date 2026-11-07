@@ -1,3 +1,4 @@
+from app.wikipedia_fallback import search_wikipedia
 import csv
 import io
 import sqlite3
@@ -41,6 +42,13 @@ def home(request: Request, q: str = ""):
 
     if q.strip():
         results = run_search(q)
+
+        # Agar apne index mein kam results mile, Wikipedia se bhi try karo
+        if len(results) < 3:
+            wiki_result = search_wikipedia(q)
+            if wiki_result:
+                results.append(wiki_result)
+
         if results:
             ai_answer = generate_ai_answer(q, results)
             ai_sources = results[:5]
