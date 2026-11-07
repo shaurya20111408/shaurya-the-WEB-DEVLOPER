@@ -249,7 +249,7 @@
             requestAnimationFrame(() => { el.style.width = pct + "%"; });
         });
 
-        const chartData = {{ stats.chart_data | tojson }};
+                const chartData = {{ stats.chart_data | tojson }};  
         const colors = ["#5EEAD4", "#A78BFA", "#F472B6", "#60A5FA", "#FBBF24", "#4ADE80", "#FB923C", "#F87171"];
         const svg = document.getElementById("donut");
         if (chartData.length) {
