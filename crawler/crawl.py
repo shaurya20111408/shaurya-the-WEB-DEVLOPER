@@ -139,14 +139,32 @@ def setup_database():
     conn.close()
 
 
-def fetch_page(url: str):
-    try:
-        response = requests.get(url, headers=HEADERS, timeout=10)
-        response.raise_for_status()
-        return response.text
-    except requests.RequestException as e:
-        print(f"  -> Fetch fail: {url} ({e})")
-        return None
+def fetch_page(url: str, max_retries: int = 3):
+    """URL fetch karta hai, temporary failures par retry karta hai (exponential backoff ke saath)."""
+    last_error = None
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            response = requests.get(url, headers=HEADERS, timeout=10)
+            response.raise_for_status()
+            return response.text
+        except requests.exceptions.HTTPError as e:
+            status = e.response.status_code if e.response is not None else None
+            # 404/403/401 jaisi errors retry karne se theek nahi hongi — turant give up
+            if status in (404, 403, 401, 410):
+                print(f"  -> Fetch fail (permanent, {status}): {url}")
+                return None
+            last_error = e
+        except requests.RequestException as e:
+            last_error = e
+
+        if attempt < max_retries:
+            wait_time = attempt * 2  # 2s, 4s, 6s...
+            print(f"  -> Attempt {attempt} failed, retrying in {wait_time}s... ({url})")
+            time.sleep(wait_time)
+
+    print(f"  -> Fetch fail after {max_retries} attempts: {url} ({last_error})")
+    return None
 
 
 def extract_content(html: str, url: str):
