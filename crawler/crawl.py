@@ -4,6 +4,7 @@ import requests
 import trafilatura
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
+from urllib.robotparser import RobotFileParser
 
 SEED_URLS = [
     # Python
@@ -121,6 +122,32 @@ HEADERS = {
     "User-Agent": "PrivateSearchBot/0.1 (learning project; contact: your-email@example.com)"
 }
 
+# Har domain ke robots.txt rules cache karte hain (baar baar fetch na karna pade)
+_robots_cache = {}
+
+
+def is_crawl_allowed(url: str) -> bool:
+    """robots.txt check karta hai ki is URL ko crawl karna allowed hai ya nahi."""
+    parsed = urlparse(url)
+    domain = f"{parsed.scheme}://{parsed.netloc}"
+
+    if domain not in _robots_cache:
+        robots_url = f"{domain}/robots.txt"
+        rp = RobotFileParser()
+        rp.set_url(robots_url)
+        try:
+            rp.read()
+        except Exception:
+            # robots.txt na mile ya fetch fail ho, toh default allow maan lo
+            rp = None
+        _robots_cache[domain] = rp
+
+    rp = _robots_cache[domain]
+    if rp is None:
+        return True  # robots.txt nahi mila, allow maan lo
+
+    return rp.can_fetch(HEADERS["User-Agent"], url)
+
 DB_PATH = "search_index.db"
 
 # Auto-expand settings
@@ -224,6 +251,11 @@ def save_page(url: str, title: str, content: str):
 
 def crawl_one(url: str, saved: list, failed: list) -> list[str]:
     """Ek URL crawl karta hai, save karta hai, aur uske andar ke links return karta hai."""
+    if not is_crawl_allowed(url):
+        print(f"Skipping (disallowed by robots.txt): {url}")
+        failed.append((url, "disallowed by robots.txt"))
+        return []
+
     print(f"Fetching: {url}")
     html = fetch_page(url)
     if not html:
@@ -289,3 +321,4 @@ def crawl():
 
 if __name__ == "__main__":
     crawl()
+
