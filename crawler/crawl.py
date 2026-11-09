@@ -5,6 +5,7 @@ import trafilatura
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 from urllib.robotparser import RobotFileParser
+import xml.etree.ElementTree as ET
 
 SEED_URLS = [
     # Python
@@ -122,8 +123,28 @@ HEADERS = {
     "User-Agent": "PrivateSearchBot/0.1 (learning project; contact: your-email@example.com)"
 }
 
-# Har domain ke robots.txt rules cache karte hain (baar baar fetch na karna pade)
+DB_PATH = "search_index.db"
+
+# Auto-expand settings
+MAX_DEPTH = 1
+MAX_LINKS_PER_PAGE = 3
+
+# Har domain ke robots.txt rules cache karte hain
 _robots_cache = {}
+
+NON_HTML_EXTENSIONS = (
+    ".png", ".jpg", ".jpeg", ".svg", ".gif", ".webp", ".ico",
+    ".pdf", ".zip", ".gz", ".tar", ".tar.gz",
+    ".mp4", ".mp3", ".avi", ".mov",
+    ".css", ".js", ".json", ".xml",
+    ".doc", ".docx", ".xls", ".xlsx",
+)
+
+
+def is_probably_html_page(url: str) -> bool:
+    """URL extension dekhke andaza lagata hai ki ye ek webpage hai ya file (image/doc/etc)."""
+    path = urlparse(url).path.lower()
+    return not path.endswith(NON_HTML_EXTENSIONS)
 
 
 def is_crawl_allowed(url: str) -> bool:
@@ -138,21 +159,43 @@ def is_crawl_allowed(url: str) -> bool:
         try:
             rp.read()
         except Exception:
-            # robots.txt na mile ya fetch fail ho, toh default allow maan lo
             rp = None
         _robots_cache[domain] = rp
 
     rp = _robots_cache[domain]
     if rp is None:
-        return True  # robots.txt nahi mila, allow maan lo
+        return True
 
     return rp.can_fetch(HEADERS["User-Agent"], url)
 
-DB_PATH = "search_index.db"
 
-# Auto-expand settings
-MAX_DEPTH = 1          # kitni "layers" andar links follow karein (0 = sirf seed, 1 = seed + unke links)
-MAX_LINKS_PER_PAGE = 3  # har page se zyada se zyada kitne naye links follow karein
+def get_sitemap_urls(domain: str, limit: int = 20) -> list[str]:
+    """Domain ke sitemap.xml se URLs nikalta hai (agar mile)."""
+    sitemap_urls_to_try = [
+        f"{domain}/sitemap.xml",
+        f"{domain}/sitemap_index.xml",
+    ]
+
+    for sitemap_url in sitemap_urls_to_try:
+        try:
+            resp = requests.get(sitemap_url, headers=HEADERS, timeout=10)
+            if resp.status_code != 200:
+                continue
+
+            root = ET.fromstring(resp.content)
+            ns = {"ns": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+
+            urls = [loc.text for loc in root.findall(".//ns:loc", ns)]
+            if not urls:
+                urls = [loc.text for loc in root.findall(".//loc")]
+
+            if urls:
+                print(f"  -> Sitemap found: {len(urls)} URLs at {sitemap_url}")
+                return urls[:limit]
+        except (ET.ParseError, requests.RequestException):
+            continue
+
+    return []
 
 
 def setup_database():
@@ -167,7 +210,7 @@ def setup_database():
 
 
 def fetch_page(url: str, max_retries: int = 3):
-    """URL fetch karta hai, temporary failures par retry karta hai (exponential backoff ke saath)."""
+    """URL fetch karta hai, temporary failures par retry karta hai."""
     last_error = None
 
     for attempt in range(1, max_retries + 1):
@@ -177,7 +220,6 @@ def fetch_page(url: str, max_retries: int = 3):
             return response.text
         except requests.exceptions.HTTPError as e:
             status = e.response.status_code if e.response is not None else None
-            # 404/403/401 jaisi errors retry karne se theek nahi hongi — turant give up
             if status in (404, 403, 401, 410):
                 print(f"  -> Fetch fail (permanent, {status}): {url}")
                 return None
@@ -186,7 +228,7 @@ def fetch_page(url: str, max_retries: int = 3):
             last_error = e
 
         if attempt < max_retries:
-            wait_time = attempt * 2  # 2s, 4s, 6s...
+            wait_time = attempt * 2
             print(f"  -> Attempt {attempt} failed, retrying in {wait_time}s... ({url})")
             time.sleep(wait_time)
 
@@ -211,7 +253,6 @@ def extract_content(html: str, url: str):
 
 
 def extract_links(html: str, base_url: str, same_domain_only: bool = True) -> list[str]:
-    """Page ke andar se internal links nikalta hai (auto-expand ke liye)."""
     soup = BeautifulSoup(html, "html.parser")
     base_domain = urlparse(base_url).netloc
 
@@ -225,7 +266,6 @@ def extract_links(html: str, base_url: str, same_domain_only: bool = True) -> li
             continue
         if same_domain_only and parsed.netloc != base_domain:
             continue
-        # fragments aur query junk clean karo
         clean_url = parsed._replace(fragment="", query="").geturl()
         links.append(clean_url)
 
@@ -251,6 +291,10 @@ def save_page(url: str, title: str, content: str):
 
 def crawl_one(url: str, saved: list, failed: list) -> list[str]:
     """Ek URL crawl karta hai, save karta hai, aur uske andar ke links return karta hai."""
+    if not is_probably_html_page(url):
+        print(f"Skipping (non-HTML file): {url}")
+        return []
+
     if not is_crawl_allowed(url):
         print(f"Skipping (disallowed by robots.txt): {url}")
         failed.append((url, "disallowed by robots.txt"))
@@ -290,7 +334,27 @@ def crawl():
     failed = []
     visited = set(SEED_URLS)
 
-    current_layer = list(SEED_URLS)
+    print("--- Checking sitemaps for seed domains ---\n")
+    checked_domains = set()
+    sitemap_urls = []
+
+    for url in SEED_URLS:
+        parsed = urlparse(url)
+        domain = f"{parsed.scheme}://{parsed.netloc}"
+        if domain in checked_domains:
+            continue
+        checked_domains.add(domain)
+
+        found = get_sitemap_urls(domain, limit=5)
+        for u in found:
+            if u not in visited and is_probably_html_page(u):
+                visited.add(u)
+                sitemap_urls.append(u)
+
+    if sitemap_urls:
+        print(f"\nTotal {len(sitemap_urls)} new URLs found via sitemaps.\n")
+
+    current_layer = list(SEED_URLS) + sitemap_urls
 
     for depth in range(MAX_DEPTH + 1):
         next_layer = []
@@ -321,4 +385,3 @@ def crawl():
 
 if __name__ == "__main__":
     crawl()
-
