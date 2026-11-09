@@ -205,6 +205,12 @@ def setup_database():
             url, title, content
         )
     """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS page_meta (
+            url TEXT PRIMARY KEY,
+            crawled_at TEXT
+        )
+    """)
     conn.commit()
     conn.close()
 
@@ -280,10 +286,15 @@ def url_already_indexed(url: str) -> bool:
 
 
 def save_page(url: str, title: str, content: str):
+    import datetime
     conn = sqlite3.connect(DB_PATH)
     conn.execute(
         "INSERT INTO pages (url, title, content) VALUES (?, ?, ?)",
         (url, title, content)
+    )
+    conn.execute(
+        "INSERT OR REPLACE INTO page_meta (url, crawled_at) VALUES (?, ?)",
+        (url, datetime.datetime.now().isoformat())
     )
     conn.commit()
     conn.close()
